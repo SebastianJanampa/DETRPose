@@ -55,7 +55,8 @@ dependencies = [
     "loguru",
     "iopath",
     "cloudpickle",
-    "huggingface_hub"
+    "huggingface_hub",
+    "safetensors"
 ]
 
 # 4. Optional Dependencies (for development, testing, etc.)

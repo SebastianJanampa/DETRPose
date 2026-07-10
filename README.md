@@ -66,6 +66,7 @@ and a new classification loss that are variations of the LQE head and the varifo
 | **DETRPose-M** | 72.0 | 91.0 | 20.7 M | 6.86 ms | 64.9 | [py](https://github.com/SebastianJanampa/DETRPose/tree/inference_only/detrpose/configs/detrpose/detrpose_hgnetv2_m_crowdpose.py) | [72.0](https://huggingface.co/SebasJanampa/DETRPose_M_CROWDPOSE) |
 | **DETRPose-L** | 73.3 | 91.6 | 32.7 M | 9.03 ms | 103.5 | [py](https://github.com/SebastianJanampa/DETRPose/tree/inference_only/detrpose/configs/detrpose/detrpose_hgnetv2_l_crowdpose.py) | [73.3](https://huggingface.co/SebasJanampa/DETRPose_L_CROWDPOSE) |
 | **DETRPose-X** | 75.1 | 92.1 | 73.3 M | 13.01 ms | 232.3 | [py](https://github.com/SebastianJanampa/DETRPose/tree/inference_only/detrpose/configs/detrpose/detrpose_hgnetv2_x_crowdpose.py) | [75.1](https://huggingface.co/SebasJanampa/DETRPose_X_CROWDPOSE) |
+
 **Notes:**
 - **Latency** is evaluated on a single  Tesla V100 GPU with $batch\\_size = 1$, $fp16$, and $TensorRT==8.6.3$.
 
