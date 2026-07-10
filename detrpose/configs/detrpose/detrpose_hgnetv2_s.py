@@ -14,4 +14,4 @@ model.encoder.in_channels = [256, 512, 1024]
 model.encoder.depth_mult=0.34
 model.encoder.expansion=0.5
 
-model.decoder.num_layers = 3
+model.transformer.num_layers = 3

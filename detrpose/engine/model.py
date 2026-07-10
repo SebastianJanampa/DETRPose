@@ -62,7 +62,7 @@ class DETR(object):
 
         self.create_model(resume, deploy=deploy)
 
-        num_keypoints = self.model.model.decoder.num_keypoints
+        num_keypoints = self.model.model.transformer.num_keypoints
 
         if num_keypoints == 17:
             self.annotator = COCOVisualizer()

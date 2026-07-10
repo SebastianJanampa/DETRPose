@@ -17,9 +17,9 @@ model.encoder.depth_mult = 0.5
 model.encoder.expansion = 0.34
 model.encoder.dim_feedforward = 512
 
-model.decoder.num_layers = 3
-model.decoder.dim_feedforward = 512
-model.decoder.num_points= 6
+model.transformer.num_layers = 3
+model.transformer.dim_feedforward = 512
+model.transformer.num_points= 6
 
 private.model.hidden_dim = 128
 private.model.num_levels = 2

@@ -11,6 +11,6 @@ model.backbone.name = 'B2'
 model.backbone.use_lab = True
 model.encoder.in_channels = [384, 768, 1536]
 model.encoder.depth_mult = 0.67
-model.decoder.num_layers = 4
+model.transformer.num_layers = 4
 
 

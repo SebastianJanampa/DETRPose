@@ -19,12 +19,12 @@ class DETR(nn.Module):
         self, 
         backbone, 
         encoder, 
-        decoder
+        transformer
         ):
         super().__init__()
         self.backbone = backbone
         self.encoder = encoder
-        self.decoder = decoder
+        self.transformer = transformer
 
     def deploy(self):
         self.eval()
@@ -36,7 +36,7 @@ class DETR(nn.Module):
     def forward(self, samples, targets=None):
         feats = self.backbone(samples)
         feats = self.encoder(feats)
-        out = self.decoder(
+        out = self.transformer(
             feats,
             targets,
             img_dim=samples.shape[-2:] if self.training else None

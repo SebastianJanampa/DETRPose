@@ -27,7 +27,7 @@ model = L(nn.DETR)(
         temperatureW=20,
         eval_spatial_size= "${private.model.eval_spatial_size}"
 		),
-	decoder=L(nn.DETRPoseTransformer)(
+	transformer=L(nn.DETRPoseTransformer)(
         hidden_dim="${private.model.hidden_dim}",
         dropout=0.0,
         num_heads=8,
