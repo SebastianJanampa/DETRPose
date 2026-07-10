@@ -1,0 +1,99 @@
+# DETRY Apache-2.0 license
+
+# Overview:
+# This pyproject.toml file manages the build, packaging, and distribution of the DETRY library.
+# It is an open-source library whose purpose is to promote RT-DETR-based models.
+
+# 1. Build System Configuration
+# Tells pip which tool to use to build your package.
+[build-system]
+requires = ["setuptools>=70.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# # 2. Project Metadata (PEP 621)
+# This is the core information about your library. settings
+[project]
+name = "detrpose"
+version = "0.0.1"
+description = ""
+readme = "README.md"
+requires-python = ">=3.8"
+license = { "text" = "APACHE-2.0" }
+keywords = ["deep-learning", "computer-vision", "transformer", "DETR"]
+authors = [
+    { name = "Sebastian Janampa", email = "rjsebastian001@gmail.com" },
+]
+maintainers = [
+    { name = "Sebastian Janampa ", email = "rjsebastian001@gmail.com" },
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License", # Or MIT, etc.
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: POSIX :: Linux",
+]
+
+# 3. Project Dependencies
+# These are the packages your library needs to run.
+dependencies = [
+    "torch>=2.0.1",
+    "torchvision>=0.15.2",
+    "numpy>=1.23.0",
+    "matplotlib",
+    "omegaconf",
+    "opencv-python",
+    "pillow",
+    "PyYAML",
+    "scipy",
+    "loguru",
+    "iopath",
+    "cloudpickle",
+    "huggingface_hub"
+]
+
+# 4. Optional Dependencies (for development, testing, etc.)
+# Installed with: pip install .[dev]
+[project.optional-dependencies]
+export = []
+
+# 5. Project URLs
+# Links that will appear on the PyPI project page.
+[project.urls]
+#"Homepage" = ""
+#"Documentation" = ""
+#"Bug Tracker" = ""
+
+
+# --- Tool Configurations ---
+[tool.setuptools]
+# Tells setuptools where to find your actual code.
+# Assumes your code is in a `src/transpector` directory.
+packages = ["detrpose"]
+
+[tool.ruff]
+# Configuration for the Ruff linter/formatter.
+line-length = 88
+# Select rules: F (Pyflakes), E/W (pycodestyle), I (isort), TID (flake8-tidy-imports)
+select = ["E", "W", "F", "I", "TID"]
+
+[tool.black]
+# Configuration for the Black code formatter.
+line-length = 88
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+
+[tool.mypy]
+# Configuration for the MyPy type checker.
+python_version = "3.8"
+warn_return_any = true
+ignore_missing_imports = true

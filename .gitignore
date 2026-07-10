@@ -1,0 +1,41 @@
+# --- Model Weights and Large Data ---
+weights/
+fixed_weights/
+data/
+output/
+official_weights/
+onnx_engines/
+trt_engines/
+samples/
+*.pth
+*.pt
+
+# --- Python & Build Artifacts ---
+**/__pycache__/
+**.egg-info/
+build/
+dist/
+.venv/
+.env/
+
+# --- Files in the root folder
+/*.py
+/*.png
+/*.jpg
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints/
+
+# --- IDEs and Editors ---
+.idea/
+.vscode/
+
+# --- OS Junk ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# --- Logs and Outputs ---
+*.log
+results.json
+examples/output/
