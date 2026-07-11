@@ -74,9 +74,7 @@ export = []
 
 # --- Tool Configurations ---
 [tool.setuptools]
-# Tells setuptools where to find your actual code.
-# Assumes your code is in a `src/transpector` directory.
-packages = ["detrpose"]
+packages = { find = { where = ["."] } }
 
 [tool.ruff]
 # Configuration for the Ruff linter/formatter.
