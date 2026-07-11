@@ -168,7 +168,6 @@ class DETR(object):
         # Save Logic
         if save:
             save_path = os.path.join(save_dir, filename) + '.png'
-            print(f"{save_path=}")
             cv2.imwrite(save_path, im_cv2)
             print(f"Annotated image saved to: {save_path}")
 
@@ -349,7 +348,6 @@ class DETR(object):
             ext = os.path.splitext(source)[-1].lower()
             filename = os.path.splitext(os.path.basename(source))[0]
             kwargs['filename'] = filename
-            print(kwargs)
 
             if ext in ['.jpg', '.jpeg', '.png', '.bmp']:
                 return self._run_inference(Image.open(source).convert("RGB"), thrh, img_size, **kwargs)
