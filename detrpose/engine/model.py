@@ -59,7 +59,12 @@ class DETR(object):
         self._array_counter = 1 # Keep track of sequential image numbers for numpy arrays / PIL inputs
 
         if device is None:
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            if torch.cuda.is_available():
+                self.device = 'cuda'
+            elif torch.backends.mps.is_available():
+                self.device = 'mps'
+            else:
+                self.device = 'cpu'
         else:
             self.device = device
 
