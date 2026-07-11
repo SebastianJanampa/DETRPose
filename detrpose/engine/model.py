@@ -1,4 +1,5 @@
 import os
+import re
 import cv2
 import math
 import torch
@@ -7,6 +8,7 @@ import torchvision.transforms as T
 
 from PIL import Image
 from copy import deepcopy
+from pathlib import Path
 from omegaconf import OmegaConf
 
 from detrpose.core import LazyConfig
@@ -54,6 +56,7 @@ class DETR(object):
         super().__init__()
         config_path = _resolve_config_path(model)
         self.cfg = LazyConfig.load(config_path)
+        self._array_counter = 1 # Keep track of sequential image numbers for numpy arrays / PIL inputs
 
         if device is None:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -121,11 +124,17 @@ class DETR(object):
         h_new = int(math.ceil(size_tuple[1] / 32.0)) * 32
         return (h_new, w_new)
 
-    def _run_inference(self, im_pil: Image.Image, thrh: float, img_size: tuple, save_path: str = None) -> dict:
+    def _run_inference(self, im_pil: Image.Image, thrh: float, img_size: tuple[int], **kwargs) -> dict:
         """Executes the forward pass, filters thresholds, plots, and saves."""
+        # Extract kwargs
+        save = kwargs.get("save", False)
+        save_dir = kwargs.get("save_dir", "output")
+        show = kwargs.get("show", False)
+        exist_ok = kwargs.get("exist_ok", False)
+        filename = kwargs.get("filename", '')
+
         w, h = im_pil.size
         orig_size = torch.tensor([[w, h]]).to(self.device)
-
         target_size = self._format_img_size(img_size)
 
         transforms = T.Compose([
@@ -144,74 +153,89 @@ class DETR(object):
         labels = labels[0].detach().cpu().numpy()
         keypoints = keypoints[0].detach().cpu().numpy()
 
-        # Threshold filtering
         idx = scores > thrh
-        valid_scores = scores[idx]
-        valid_labels = labels[idx]
-        valid_keypoints = keypoints[idx]
+        valid_scores, valid_labels, valid_keypoints = scores[idx], labels[idx], keypoints[idx]
 
         # Visualizer Logic
         im_cv2 = cv2.cvtColor(np.array(im_pil), cv2.COLOR_RGB2BGR)
         self.annotator.draw_on(im_cv2, valid_keypoints)
 
-        # Save image if a path is provided
-        if save_path:
+        # Show Logic
+        if show:
+            cv2.imshow(f"DETRPose Inference - {filename}", im_cv2)
+            cv2.waitKey(0) # Pauses until you press a key
+
+        # Save Logic
+        if save:
+            save_path = os.path.join(save_dir, filename) + '.png'
+            print(f"{save_path=}")
             cv2.imwrite(save_path, im_cv2)
             print(f"Annotated image saved to: {save_path}")
 
         return {
-            "scores": valid_scores,
-            "labels": valid_labels,
-            "keypoints": valid_keypoints,
-            "original_size": (w, h),
-            "annotated_image": im_cv2
+            "scores": valid_scores, "labels": valid_labels, "keypoints": valid_keypoints,
+            "original_size": (w, h), "annotated_image": im_cv2
         }
 
-    def _process_video(self, video_path: str, thrh: float, img_size: tuple, save_path: str):
-        """Fully processes a video and saves the output."""
+    def _process_video(self, video_path: str, thrh: float, img_size: tuple, **kwargs):
         print(f"Processing video: {video_path}")
-        out = None
 
+        save = kwargs.get("save", False)
+        save_dir = kwargs.get("save_dir", "output")
+        show = kwargs.get("show", False)
+        exist_ok = kwargs.get("exist_ok", True)
+        filename = kwargs.get("filename", '')
+
+        if save:
+            os.makedirs(save_dir, exist_ok=exist_ok)
+            save_path = os.path.join(save_dir, filename)
+
+        out = None
         for frame_entry in InputHandler.process_video(video_path):
-            if out is None:
+            if out is None and save:
                 fourcc = cv2.VideoWriter_fourcc(*"mp4v")
                 fps = frame_entry["fps"]
                 w, h = frame_entry["orig_size"]
                 out = cv2.VideoWriter(save_path, fourcc, fps, (w, h))
 
             pil_img = InputHandler.to_pil_image(frame_entry["frame_data"])
-            res = self._run_inference(pil_img, thrh, img_size, save_path=None)
-            out.write(res["annotated_image"])
+
+            # Override inner kwargs so inference doesn't block (show) or spam images (save)
+            inner_kwargs = kwargs.copy()
+            inner_kwargs["save"] = False
+            inner_kwargs["show"] = False
+
+            res = self._run_inference(pil_img, thrh, img_size, **inner_kwargs)
+            annotated_frame = res["annotated_image"]
+
+            if show:
+                cv2.imshow(f"Video: {filename}", annotated_frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+
+            if save and out is not None:
+                out.write(annotated_frame)
 
         if out is not None:
             out.release()
             print(f"Annotated video saved to: {save_path}")
 
-        return {"file": video_path, "status": "processed", "saved_path": save_path}
+        if show:
+            cv2.destroyAllWindows()
 
-    def _process_folder(self, folder_path: str, thrh: float, img_size: tuple):
-        """Fully processes all images and videos inside a folder."""
+        return {"file": video_path}
+
+    def _process_folder(self, folder_path: str, thrh: float, img_size: tuple, **kwargs):
         print(f"Processing folder: {folder_path}")
-        output_dir = os.path.join(folder_path, "output")
-        os.makedirs(output_dir, exist_ok=True)
 
         all_results = []
         for item in InputHandler.process_folder(folder_path):
-            base_name = os.path.splitext(os.path.basename(item["path"]))[0]
-
-            if item["type"] == "image":
-                save_path = os.path.join(output_dir, f"{base_name}_{self.annotator_type}.jpg")
-                res = self(item["path"], thrh, img_size, save_path)
-                all_results.append({"file": item["path"], "type": "image", "saved_path": save_path})
-
-            elif item["type"] == "video":
-                save_path = os.path.join(output_dir, f"{base_name}_{self.annotator_type}.mp4")
-                res = self._process_video(item["path"], thrh, img_size, save_path)
-                all_results.append(res)
+            ref = self(item["path"], thrh, img_size, **kwargs)
+            all_results.append(ref)
 
         return all_results
 
-    def _run_live_webcam(self, camera_id: int, thrh: float, img_size: tuple):
+    def _run_live_webcam(self, camera_id: int, thrh: float, img_size: tuple, **kwargs):
         """Opens a live webcam feed, runs inference, and displays the results in real-time."""
         print(f"Starting live webcam feed (Camera ID: {camera_id}). Press 'q' in the window to quit.")
 
@@ -221,16 +245,21 @@ class DETR(object):
 
         while cap.isOpened():
             ret, frame = cap.read()
-            frame = cv2.flip(frame, 1)
             if not ret:
                 print("Failed to grab frame from webcam. Exiting...")
                 break
+            frame = cv2.flip(frame, 1)
+
+            # Pass save=False so we don't save thousands of JPEGs
+            inner_kwargs = kwargs.copy()
+            inner_kwargs["save"] = False
+            inner_kwargs["show"] = False
 
             # Convert the raw OpenCV BGR frame to a PIL RGB Image for inference
             pil_img = InputHandler.to_pil_image(frame)
 
             # Run inference (pass save_path=None so we don't save thousands of JPEGs)
-            res = self._run_inference(pil_img, thrh, img_size, save_path=None)
+            res = self._run_inference(pil_img, thrh, img_size, **inner_kwargs)
 
             # Display the annotated image in a live pop-up window
             cv2.imshow("DETRPose Live Inference", res["annotated_image"])
@@ -244,19 +273,70 @@ class DETR(object):
         cv2.destroyAllWindows()
         print("Webcam feed closed.")
 
-    def __call__(self, source, thrh: float = 0.5, img_size: int | tuple = 640, save_path: str = None):
+    @staticmethod
+    def check_folder(output_dir, exist_ok=False):
+        """
+        Creates an output directory, incrementing a numeric suffix if the path already exists.
+
+        For example, if 'outputs/train/exp1' exists, it will create 'outputs/train/exp2'.
+        If 'outputs/train/exp' is given, it will start by checking for 'outputs/train/exp1'.
+
+        Args:
+            output_dir (str): The desired directory path, e.g., 'outputs/train/exp1'.
+            exist_ok (bool): If True, it will use the provided `output_dir` as is,
+                             creating it if it doesn't exist, without searching for a new path.
+
+        Returns:
+            str: The path to the created directory.
+        """
+        if exist_ok:
+            os.makedirs(output_dir, exist_ok=True)
+            return output_dir
+
+        # Separate the base path from any existing numeric suffix
+        # e.g., 'predictions/run1' -> base='predictions/run', num=1
+        match = re.match(r'(.*?)(\d*)$', output_dir)
+        base, num_str = match.groups()
+
+        # If the original path had no number, start counting from 1.
+        # Otherwise, start from the number that was found.
+        counter = int(num_str) if num_str else 1
+
+        current_dir = f"{base}{counter}"
+
+        # Increment the counter until a non-existent path is found
+        while os.path.exists(current_dir):
+            counter += 1
+            current_dir = f"{base}{counter}"
+
+        os.makedirs(current_dir, exist_ok=True)
+        return current_dir
+
+    def __call__(
+            self,
+            source, thrh: float = 0.5,
+            img_size: int | tuple = 640,
+            **kwargs,
+    ):
+        kwargs.setdefault("show", False)
+        kwargs.setdefault("save", False)
+        kwargs.setdefault("exist_ok", False)
+        kwargs.setdefault("save_dir", Path(self.check_folder(
+            kwargs['save_dir'] if hasattr(kwargs, 'save_dir') else 'predictions/runs1', kwargs['exist_ok'])
+        ) if kwargs['save'] else None)
 
         # 1. Handle Webcams (If input is an integer 0, or string "0")
         if isinstance(source, int) or (isinstance(source, str) and source.isdigit()):
             cam_id = int(source)
-            return self._run_live_webcam(cam_id, thrh, img_size)
+            return self._run_live_webcam(cam_id, thrh, img_size, **kwargs)
 
         # 2. Handle PIL and OpenCV Images
         elif isinstance(source, (Image.Image, np.ndarray)):
             pil_img = InputHandler.to_pil_image(source)
-            if save_path is None:
-                save_path = f"output_{self.annotator_type}.jpg"
-            return self._run_inference(pil_img, thrh, img_size, save_path)
+            filename = f"image{self._array_counter}.jpg"
+            self._array_counter += 1
+            kwargs['filename'] = [filename]
+            return self._run_inference(pil_img, thrh, img_size, **kwargs)
 
         # 3. Handle File and Folder Paths
         elif isinstance(source, str):
@@ -264,20 +344,17 @@ class DETR(object):
                 raise FileNotFoundError(f"Path '{source}' not found.")
 
             if os.path.isdir(source):
-                return self._process_folder(source, thrh, img_size)
+                return self._process_folder(source, thrh, img_size, **kwargs)
 
             ext = os.path.splitext(source)[-1].lower()
-            if ext in ['.jpg', '.jpeg', '.png', '.bmp']:
-                if save_path is None:
-                    base_name = os.path.splitext(os.path.basename(source))[0]
-                    save_path = f"{base_name}_{self.annotator_type}.jpg"
-                return self._run_inference(Image.open(source).convert("RGB"), thrh, img_size, save_path)
+            filename = os.path.splitext(os.path.basename(source))[0]
+            kwargs['filename'] = filename
+            print(kwargs)
 
+            if ext in ['.jpg', '.jpeg', '.png', '.bmp']:
+                return self._run_inference(Image.open(source).convert("RGB"), thrh, img_size, **kwargs)
             elif ext in ['.mp4', '.avi', '.mkv', '.mov']:
-                if save_path is None:
-                    base_name = os.path.splitext(os.path.basename(source))[0]
-                    save_path = f"{base_name}_{self.annotator_type}.mp4"
-                return self._process_video(source, thrh, img_size, save_path)
+                return self._process_video(source, thrh, img_size, **kwargs)
             else:
                 raise ValueError(f"Unsupported file format: {source}")
 
