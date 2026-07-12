@@ -69,7 +69,7 @@ https://github.com/user-attachments/assets/de3f4ee3-182b-43f8-a40b-1aa3bee54e51
 </details>
 
 ## 🚀 Updates
-- [x] **\[2026.07.09\]** Release models in [HuggingFace 🤗](https://huggingface.co/spaces/SebasJanampa/DETRPose).
+- [x] **\[2026.07.09\]** Release models in [HuggingFace 🤗](https://huggingface.co/collections/SebasJanampa/detrpose).
 - [x] **\[2026.07.09\]** Release a new [inference_only](https://github.com/SebastianJanampa/DETRPose/tree/inference_only) branch.
 - [x] **\[2026.07.02\]** Release new version of DETRPose paper.
 - [x] **\[2026.06.20\]** DETRPose has been accepted in ECCV2026.
