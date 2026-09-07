@@ -359,10 +359,10 @@ If you use `DETRPose` or its methods in your work, please cite the following Bib
 <summary> bibtex </summary>
 
 ```latex
-@misc{janampa2025detrpose,
-      title={DETRPose: Real-time end-to-end transformer model for multi-person pose estimation}, 
+@misc{janampa2026detrposerealtimeendtoendmultiperson,
+      title={DETRPose: Real-Time End-to-End Multi-Person Pose Estimation via Modified Transformer Decoder and Novel Denoising Keypoints}, 
       author={Sebastian Janampa and Marios Pattichis},
-      year={2025},
+      year={2026},
       eprint={2506.13027},
       archivePrefix={arXiv},
       primaryClass={cs.CV},
